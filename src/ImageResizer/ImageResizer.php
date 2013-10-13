@@ -16,9 +16,14 @@ namespace ImageResizer;
 class ImageResizer {
 	private static $quality = 90;
 	private static $memory = '100M';
+	private $slim;
 
-	public static function route ($app) {
-		$app->get('/imagecache/(:path)', function () {
+	public function __construct ($slim) {
+		$this->slim = $slim;
+	}
+
+	public function route () {
+		$this->slim->get('/imagecache/(:path)', function () {
 
 		});
 	}
