@@ -1,10 +1,6 @@
 <?php
 namespace ImageResizer;
-// Smart Image FRONTCONTROLLER Resizer 1.0
-// Created by: Ryan Mahoney (http://www.virtuecenter.com)
-// Date: May 17, 2011
-// Based on the work of Joe Lencioni, Smart Image Resizer 1.4.1 (http://shiftingpixel.com)
-
+//Based on the work of Joe Lencioni, Smart Image Resizer 1.4.1 (http://shiftingpixel.com)
 
 // for external images
 // http://yoursite.com/imagecache/width/height/cropratio/E/www.somesite.com/path/to/file.jpg
@@ -22,9 +18,91 @@ class ImageResizer {
 		$this->slim = $slim;
 	}
 
-	public function route () {
-		$this->slim->get('/imagecache/(:path)', function () {
+	public function route ($enforceRefer=false) {
+		$this->slim->get('/imagecache/:path+', function ($pieces) use ($enforceRefer) {
+			if ($enforceRefer) {
+				if (!isset($_SERVER['HTTP_REFERER'])) {
+					$this->error('Bad request');
+				}
+				if (substr_count($_SERVER['HTTP_REFERER'], $_SERVER['HTTP_HOST']) < 1) {
+					$this->error('Bad referer');
+				}
+			}
 
+			if (count($pieces) < 6) {
+				$this->error('Invalid Path');
+			}
+
+			$width = array_shift($pieces);
+			if (!is_numeric($width)) {
+				$this->error('Invalid Width ' . $width);
+			}
+
+			$height = array_shift($pieces);
+			if (!is_numeric($height)) {
+				$this->error('Invalid Height ' . $height);
+			}
+
+			$cropratio = array_shift($pieces);
+			if (substr_count($cropratio, ':') != 1) {
+				$this->error('Invalid Crop Ratio');
+			}
+			$cropPieces = explode(':', $cropratio, 2);
+			if ((!isset($cropPieces[0]) || !is_numeric($cropPieces[0])) || (!isset($cropPieces[1]) || !is_numeric($cropPieces[1])) ) {
+				$this->error('Invalid Crop Ratio');
+			}
+
+			$type = array_shift($pieces);
+			if (!in_array($type, array('L', 'E','ES'))) {
+				$this->error('Invalid Conversion Type ' . $type);
+			}
+
+			$file = implode('/', $pieces);
+			$extension = pathinfo($file, PATHINFO_EXTENSION);
+			if (!in_array(strtolower($extension), array('jpg', 'jpeg', 'png', 'gif'))) {
+				$this->error('Invalid Image Type');
+			}
+
+			$filedir = null;
+			if (substr_count($file, '/') > 0) {
+				$filedir = explode('/', $file);
+				$filename = array_pop($filedir);
+				$filedir = implode('/', $filedir);
+			}
+
+			$imagedir = $_SERVER['DOCUMENT_ROOT'] . '/imagecache/' . $width . '/' . $height . '/' . $cropratio . '/' . $type . '/' . $filedir;
+			$image = $imagedir . '/' . $filename;
+
+			if (!file_exists($imagedir)) {
+				@mkdir($imagedir, 0755, true);
+				if (!file_exists($imagedir)) {
+					$this->error('Can not write to cache dir');
+				}
+			}
+
+/*
+print_r(array(
+				'file' => $file,
+				'filepath' => $_SERVER['DOCUMENT_ROOT'] . '/' . $file,
+				'image' => $image,
+				'type' => $type,
+				'height' => $height,
+				'width' => $width,
+				'cropratio' => $cropratio,
+				'imagedir' => $imagedir
+			));
+exit;
+*/
+			$this->process(array(
+				'file' => $file,
+				'filepath' => $_SERVER['DOCUMENT_ROOT'] . '/' . $file,
+				'image' => $image,
+				'type' => $type,
+				'height' => $height,
+				'width' => $width,
+				'cropratio' => $cropratio,
+				'imagedir' => $imagedir
+			));
 		});
 	}
 
@@ -65,87 +143,10 @@ class ImageResizer {
 			$url = substr($url, 6);
 		} else {
 			if (substr($test, 0, 1) != '/') {
-				//throw new \Exception('Must specify absolute path');
 				return;
 			}
 		}
 		return '/imagecache/' . $width . '/' . $height . '/' . $cropratio . '/' . $type . $url;
-	}
-
-	public function deduce ($enforceRefer=false) {
-		if ($enforceRefer) {
-			if (!isset($_SERVER['HTTP_REFERER'])) {
-				$this->error('Bad request');
-			}
-			if (substr_count($_SERVER['HTTP_REFERER'], $_SERVER['HTTP_HOST']) < 1) {
-				$this->error('Bad referer');
-			}
-		}
-
-		$_SERVER['REQUEST_URI'] = preg_replace("/\/index.php$/", '', $_SERVER['REQUEST_URI']);
-
-		$pieces = explode('/', $_SERVER['REQUEST_URI'], 7);
-		if (count($pieces) != 7) {
-			$this->error('Invalid Path');
-		}
-
-		$width = $pieces[2];
-		if (!is_numeric($width)) {
-			$this->error('Invalid Width ' . $width);
-		}
-
-		$height = $pieces[3];
-		if (!is_numeric($height)) {
-			$this->error('Invalid Height ' . $height);
-		}
-
-		$cropratio = $pieces[4];
-		if (substr_count($cropratio, ':') != 1) {
-			$this->error('Invalid Crop Ratio');
-		}
-		$cropPieces = explode(':', $cropratio, 2);
-		if ((!isset($cropPieces[0]) || !is_numeric($cropPieces[0])) || (!isset($cropPieces[1]) || !is_numeric($cropPieces[1])) ) {
-			$this->error('Invalid Crop Ratio');
-		}
-
-		$type = $pieces[5];
-		if (!in_array($type, array('L','E','ES'))) {
-			$this->error('Invalid Conversion Type ' . $type);
-		}
-
-		$file = $pieces[6];
-		$extension = pathinfo($file, PATHINFO_EXTENSION);
-		if (!in_array(strtolower($extension), array('jpg', 'jpeg', 'png', 'gif'))) {
-			$this->error('Invalid Image Type');
-		}
-
-		$filedir = null;
-		if (substr_count($file, '/') > 0) {
-			$filedir = explode('/', $file);
-			$filename = array_pop($filedir);
-			$filedir = implode('/', $filedir);
-		}
-
-		$imagedir = $_SERVER['DOCUMENT_ROOT'] . '/imagecache/' . $width . '/' . $height . '/' . $cropratio . '/' . $type . '/' . $filedir;
-		$image = $imagedir . '/' . $filename;
-
-		if (!file_exists($imagedir)) {
-			@mkdir($imagedir, 0755, true);
-			if (!file_exists($imagedir)) {
-				$this->error('Can not write to cache dir');
-			}
-		}
-
-		$this->process(array(
-			'file' => $file,
-			'filepath' => $_SERVER['DOCUMENT_ROOT'] . '/' . $file,
-			'image' => $image,
-			'type' => $type,
-			'height' => $height,
-			'width' => $width,
-			'cropratio' => $cropratio,
-			'imagedir' => $imagedir
-		));
 	}
 
 	private static function getExternalFile (array $options) {
@@ -267,7 +268,7 @@ class ImageResizer {
 				break;
 
 			default:
-				$creationFunction	= 'ImageCreateFromJpeg';
+				$creationFunction	= 'imagecreatefromjpeg';
 				$outputFunction	 	= 'ImageJpeg';
 				$doSharpen			= TRUE;
 				break;
