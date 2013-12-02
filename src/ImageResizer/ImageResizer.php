@@ -79,20 +79,6 @@ class ImageResizer {
 					$this->error('Can not write to cache dir');
 				}
 			}
-
-/*
-print_r(array(
-				'file' => $file,
-				'filepath' => $_SERVER['DOCUMENT_ROOT'] . '/' . $file,
-				'image' => $image,
-				'type' => $type,
-				'height' => $height,
-				'width' => $width,
-				'cropratio' => $cropratio,
-				'imagedir' => $imagedir
-			));
-exit;
-*/
 			$this->process(array(
 				'file' => $file,
 				'filepath' => $_SERVER['DOCUMENT_ROOT'] . '/' . $file,
@@ -121,7 +107,6 @@ exit;
 		return abs ($a);
 	}
 
-
 	public static function aspectRatio($width, $height) {
 		if(!isset($width) || !(isset($height))) {
 			throw new \Exception('Must provide Height and Width');
@@ -132,7 +117,7 @@ exit;
 		return $ratio = $a . ":" . $b;
 	}
 
-	public static function getPath($url, $width, $height, $cropratio) {
+	public function getPath($url, $width, $height, $cropratio=false) {
 		$test = strtolower(substr($url, 0, 5));
 		$type = 'L';
 		if ($test == 'https') {
@@ -145,6 +130,9 @@ exit;
 			if (substr($test, 0, 1) != '/') {
 				return;
 			}
+		}
+		if ($cropratio === false) {
+			$cropratio = $width . ':'. $height;
 		}
 		return '/imagecache/' . $width . '/' . $height . '/' . $cropratio . '/' . $type . $url;
 	}
