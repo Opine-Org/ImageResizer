@@ -1,14 +1,14 @@
 {
-    "name": "virtuecenter/imageresizer",
+    "name": "opine/imageresizer",
     "type": "library",
-    "description": "Resize images based on URL path parameters",
+    "description": "Service for resizing images based on URL path parameters",
     "keywords": [],
     "license": "MIT",
     "authors": [
         {
             "name": "Ryan Mahoney",
             "email": "ryan@virtuecenter.com",
-            "homepage": "http://www.virtuecenter.com",
+            "homepage": "http://opine-php.org",
             "role": "Developer"
         }
     ],
@@ -16,6 +16,6 @@
     	"php": ">=5.4.0"
     },
     "autoload": {
-        "psr-0": {"ImageResizer": "src/"}
+        "psr-4": {"Opine\\": "src/"}
     }
 }
