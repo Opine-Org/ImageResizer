@@ -12,14 +12,15 @@ namespace Opine;
 class ImageResizer {
     private static $quality = 90;
     private static $memory = '100M';
-    private $slim;
+    private $route;
 
-    public function __construct ($slim) {
-        $this->slim = $slim;
+    public function __construct ($route) {
+        $this->route = $route;
     }
 
     public function route ($enforceRefer=false) {
-        $this->slim->get('/imagecache/:path+', function ($pieces) use ($enforceRefer) {
+        $callback = function () use ($enforceRefer) {
+            $pieces = func_get_args();
             if ($enforceRefer) {
                 if (!isset($_SERVER['HTTP_REFERER'])) {
                     $this->error('Bad request');
@@ -89,7 +90,16 @@ class ImageResizer {
                 'cropratio' => $cropratio,
                 'imagedir' => $imagedir
             ));
-        });
+        };
+        $this->route->get('/imagecache/{a}', $callback);
+        $this->route->get('/imagecache/{a}/{b}', $callback);
+        $this->route->get('/imagecache/{a}/{b}/{c}', $callback);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}', $callback);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}', $callback);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}', $callback);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}', $callback);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}', $callback);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}/{i}', $callback);
     }
 
     private function error ($msg) {
