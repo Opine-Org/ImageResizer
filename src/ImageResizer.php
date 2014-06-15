@@ -18,7 +18,7 @@ class ImageResizer {
         $this->route = $route;
     }
 
-    public function route ($enforceRefer=false) {
+    public function paths ($enforceRefer=false) {
         $callback = function () use ($enforceRefer) {
             $pieces = func_get_args();
             if ($enforceRefer) {
