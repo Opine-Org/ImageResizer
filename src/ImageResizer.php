@@ -13,93 +13,99 @@ class ImageResizer {
     private static $quality = 90;
     private static $memory = '100M';
     private $route;
+    private $enforceReferer = false;
 
     public function __construct ($route) {
         $this->route = $route;
     }
 
-    public function paths ($enforceRefer=false) {
-        $callback = function () use ($enforceRefer) {
-            $pieces = func_get_args();
-            if ($enforceRefer) {
-                if (!isset($_SERVER['HTTP_REFERER'])) {
-                    $this->error('Bad request');
-                }
-                if (substr_count($_SERVER['HTTP_REFERER'], $_SERVER['HTTP_HOST']) < 1) {
-                    $this->error('Bad referer');
-                }
-            }
+    public function enforceReferer () {
+        $this->enforceReferer = true;
+    }
 
-            if (count($pieces) < 6) {
-                $this->error('Invalid Path');
+    public function processRoute () {
+        $pieces = func_get_args();
+        if ($this->enforceReferer) {
+            if (!isset($_SERVER['HTTP_REFERER'])) {
+                $this->error('Bad request');
             }
-
-            $width = array_shift($pieces);
-            if (!is_numeric($width)) {
-                $this->error('Invalid Width ' . $width);
+            if (substr_count($_SERVER['HTTP_REFERER'], $_SERVER['HTTP_HOST']) < 1) {
+                $this->error('Bad referer');
             }
+        }
 
-            $height = array_shift($pieces);
-            if (!is_numeric($height)) {
-                $this->error('Invalid Height ' . $height);
-            }
+        if (count($pieces) < 6) {
+            $this->error('Invalid Path');
+        }
 
-            $cropratio = array_shift($pieces);
-            if (substr_count($cropratio, ':') != 1) {
-                $this->error('Invalid Crop Ratio');
-            }
-            $cropPieces = explode(':', $cropratio, 2);
-            if ((!isset($cropPieces[0]) || !is_numeric($cropPieces[0])) || (!isset($cropPieces[1]) || !is_numeric($cropPieces[1])) ) {
-                $this->error('Invalid Crop Ratio');
-            }
+        $width = array_shift($pieces);
+        if (!is_numeric($width)) {
+            $this->error('Invalid Width ' . $width);
+        }
 
-            $type = array_shift($pieces);
-            if (!in_array($type, array('L', 'E','ES'))) {
-                $this->error('Invalid Conversion Type ' . $type);
-            }
+        $height = array_shift($pieces);
+        if (!is_numeric($height)) {
+            $this->error('Invalid Height ' . $height);
+        }
 
-            $file = implode('/', $pieces);
-            $extension = pathinfo($file, PATHINFO_EXTENSION);
-            if (!in_array(strtolower($extension), array('jpg', 'jpeg', 'png', 'gif'))) {
-                $this->error('Invalid Image Type');
-            }
+        $cropratio = array_shift($pieces);
+        if (substr_count($cropratio, ':') != 1) {
+            $this->error('Invalid Crop Ratio');
+        }
+        $cropPieces = explode(':', $cropratio, 2);
+        if ((!isset($cropPieces[0]) || !is_numeric($cropPieces[0])) || (!isset($cropPieces[1]) || !is_numeric($cropPieces[1])) ) {
+            $this->error('Invalid Crop Ratio');
+        }
 
-            $filedir = null;
-            if (substr_count($file, '/') > 0) {
-                $filedir = explode('/', $file);
-                $filename = array_pop($filedir);
-                $filedir = implode('/', $filedir);
-            }
+        $type = array_shift($pieces);
+        if (!in_array($type, array('L', 'E','ES'))) {
+            $this->error('Invalid Conversion Type ' . $type);
+        }
 
-            $imagedir = $_SERVER['DOCUMENT_ROOT'] . '/imagecache/' . $width . '/' . $height . '/' . $cropratio . '/' . $type . '/' . $filedir;
-            $image = $imagedir . '/' . $filename;
+        $file = implode('/', $pieces);
+        $extension = pathinfo($file, PATHINFO_EXTENSION);
+        if (!in_array(strtolower($extension), array('jpg', 'jpeg', 'png', 'gif'))) {
+            $this->error('Invalid Image Type');
+        }
 
+        $filedir = null;
+        if (substr_count($file, '/') > 0) {
+            $filedir = explode('/', $file);
+            $filename = array_pop($filedir);
+            $filedir = implode('/', $filedir);
+        }
+
+        $imagedir = $_SERVER['DOCUMENT_ROOT'] . '/imagecache/' . $width . '/' . $height . '/' . $cropratio . '/' . $type . '/' . $filedir;
+        $image = $imagedir . '/' . $filename;
+
+        if (!file_exists($imagedir)) {
+            @mkdir($imagedir, 0755, true);
             if (!file_exists($imagedir)) {
-                @mkdir($imagedir, 0755, true);
-                if (!file_exists($imagedir)) {
-                    $this->error('Can not write to cache dir');
-                }
+                $this->error('Can not write to cache dir');
             }
-            $this->process(array(
-                'file' => $file,
-                'filepath' => $_SERVER['DOCUMENT_ROOT'] . '/' . $file,
-                'image' => $image,
-                'type' => $type,
-                'height' => $height,
-                'width' => $width,
-                'cropratio' => $cropratio,
-                'imagedir' => $imagedir
-            ));
-        };
-        $this->route->get('/imagecache/{a}', $callback);
-        $this->route->get('/imagecache/{a}/{b}', $callback);
-        $this->route->get('/imagecache/{a}/{b}/{c}', $callback);
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}', $callback);
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}', $callback);
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}', $callback);
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}', $callback);
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}', $callback);
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}/{i}', $callback);
+        }
+        $this->process(array(
+            'file' => $file,
+            'filepath' => $_SERVER['DOCUMENT_ROOT'] . '/' . $file,
+            'image' => $image,
+            'type' => $type,
+            'height' => $height,
+            'width' => $width,
+            'cropratio' => $cropratio,
+            'imagedir' => $imagedir
+        ));
+    }
+
+    public function paths () {
+        $this->route->get('/imagecache/{a}', 'imageResizer@processRoute');
+        $this->route->get('/imagecache/{a}/{b}', 'imageResizer@processRoute');
+        $this->route->get('/imagecache/{a}/{b}/{c}', 'imageResizer@processRoute');
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}', 'imageResizer@processRoute');
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}', 'imageResizer@processRoute');
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}', 'imageResizer@processRoute');
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}', 'imageResizer@processRoute');
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}', 'imageResizer@processRoute');
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}/{i}', 'imageResizer@processRoute');
     }
 
     private function error ($msg) {
