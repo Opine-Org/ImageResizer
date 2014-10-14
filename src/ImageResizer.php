@@ -1,5 +1,6 @@
 <?php
 namespace Opine;
+use Exception;
 //Based on the work of Joe Lencioni, Smart Image Resizer 1.4.1 (http://shiftingpixel.com)
 
 // for external images
@@ -58,13 +59,13 @@ class ImageResizer {
         }
 
         $type = array_shift($pieces);
-        if (!in_array($type, array('L', 'E','ES'))) {
+        if (!in_array($type, ['L', 'E','ES'])) {
             $this->error('Invalid Conversion Type ' . $type);
         }
 
         $file = implode('/', $pieces);
-        $extension = pathinfo($file, PATHINFO_EXTENSION);
-        if (!in_array(strtolower($extension), array('jpg', 'jpeg', 'png', 'gif'))) {
+        $extension = pathinfo($file, \PATHINFO_EXTENSION);
+        if (!in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'gif'])) {
             $this->error('Invalid Image Type');
         }
 
@@ -84,7 +85,7 @@ class ImageResizer {
                 $this->error('Can not write to cache dir');
             }
         }
-        $this->process(array(
+        $this->process([
             'file' => $file,
             'filepath' => $_SERVER['DOCUMENT_ROOT'] . '/' . $file,
             'image' => $image,
@@ -93,7 +94,7 @@ class ImageResizer {
             'width' => $width,
             'cropratio' => $cropratio,
             'imagedir' => $imagedir
-        ));
+        ]);
     }
 
     public function paths () {
@@ -125,7 +126,7 @@ class ImageResizer {
 
     public static function aspectRatio($width, $height) {
         if(!isset($width) || !(isset($height))) {
-            throw new \Exception('Must provide Height and Width');
+            throw new Exception('Must provide Height and Width');
         }
         $gcd = self::GCD($width, $height);
         $a = $width/$gcd;
@@ -144,7 +145,7 @@ class ImageResizer {
             $url = substr($url, 6);
         } else {
             if (substr($test, 0, 1) != '/') {
-                return;
+                throw new Exception('path must be absolute or external');
             }
         }
         if ($cropratio === false) {
@@ -284,7 +285,7 @@ class ImageResizer {
         //read in the original image
         $src = $creationFunction($options['filepath']);
 
-        if (in_array($size['mime'], array('image/gif', 'image/png'))) {
+        if (in_array($size['mime'], ['image/gif', 'image/png'])) {
             //if this is a GIF or a PNG, we need to set up transparency
             imagealphablending($dst, false);
             imagesavealpha($dst, true);
@@ -294,11 +295,11 @@ class ImageResizer {
         ImageCopyResampled($dst, $src, 0, 0, $offsetX, $offsetY, $tnWidth, $tnHeight, $width, $height);
         if ($doSharpen) {
             $sharpness  = self::findSharp($width, $tnWidth);
-            $sharpenMatrix  = array(
-            array(-1, -2, -1),
-            array(-2, $sharpness + 12, -2),
-            array(-1, -2, -1)
-            );
+            $sharpenMatrix  = [
+                [-1, -2, -1],
+                [-2, $sharpness + 12, -2],
+                [-1, -2, -1]
+            ];
             $divisor        = $sharpness;
             $offset         = 0;
             imageconvolution($dst, $sharpenMatrix, $divisor, $offset);
