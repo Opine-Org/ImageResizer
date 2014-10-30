@@ -1,0 +1,4 @@
+services:
+    imageResizer:
+        class:     'Opine\ImageResizer'
+        arguments: ['@route']
