@@ -1,39 +1,19 @@
 <?php
-namespace Opine;
-use Exception;
 //Based on the work of Joe Lencioni, Smart Image Resizer 1.4.1 (http://shiftingpixel.com)
+namespace Opine\ImageResizer;
+use Exception;
 
-// for external images
-// http://yoursite.com/imagecache/width/height/cropratio/E/www.somesite.com/path/to/file.jpg
-
-// for local images
-// http://yoursite.com/imagecache/width/height/cropratio/L/path/to/file.jpg
-
-// in your code, just give the image path the ImageResizer::getpath(url, width, height, cropratio)
-class ImageResizer {
+class Service {
     private static $quality = 90;
     private static $memory = '100M';
-    private $route;
     private $enforceReferer = false;
 
-    public function __construct ($route) {
-        $this->route = $route;
-    }
-
-    public function enforceReferer () {
-        $this->enforceReferer = true;
+    public function __construct ($config) {
+        $this->salt = $config->auth['salt'];
     }
 
     public function processRoute () {
         $pieces = func_get_args();
-        if ($this->enforceReferer) {
-            if (!isset($_SERVER['HTTP_REFERER'])) {
-                $this->error('Bad request');
-            }
-            if (substr_count($_SERVER['HTTP_REFERER'], $_SERVER['HTTP_HOST']) < 1) {
-                $this->error('Bad referer');
-            }
-        }
 
         if (count($pieces) < 6) {
             $this->error('Invalid Path');
@@ -97,18 +77,6 @@ class ImageResizer {
         ]);
     }
 
-    public function paths () {
-        $this->route->get('/imagecache/{a}', 'imageResizer@processRoute');
-        $this->route->get('/imagecache/{a}/{b}', 'imageResizer@processRoute');
-        $this->route->get('/imagecache/{a}/{b}/{c}', 'imageResizer@processRoute');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}', 'imageResizer@processRoute');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}', 'imageResizer@processRoute');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}', 'imageResizer@processRoute');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}', 'imageResizer@processRoute');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}', 'imageResizer@processRoute');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}/{i}', 'imageResizer@processRoute');
-    }
-
     private function error ($msg) {
         header('Status: 400 ' . $msg);
         echo $msg;
@@ -151,7 +119,8 @@ class ImageResizer {
         if ($cropratio === false) {
             $cropratio = $width . ':'. $height;
         }
-        return '/imagecache/' . $width . '/' . $height . '/' . $cropratio . '/' . $type . $url;
+        $path = $width . '/' . $height . '/' . $cropratio . '/' . $type . $url;
+        return '/imagecache/' . $path . '?' . $this->encryptDecrypt('encrypt', $path);
     }
 
     private static function getExternalFile (array $options) {
@@ -261,7 +230,7 @@ class ImageResizer {
                 $outputFunction     = 'ImagePng';
                 $mime               = 'image/png'; // We need to convert GIFs to PNGs
                 $doSharpen          = FALSE;
-                self::$quality          = round(10 - (self::$quality / 10)); // We are converting the GIF to a PNG and PNG needs a compression level of 0 (no compression) through 9
+                self::$quality      = round(10 - (self::$quality / 10)); // We are converting the GIF to a PNG and PNG needs a compression level of 0 (no compression) through 9
                 break;
 
             case 'image/x-png':
@@ -324,7 +293,6 @@ class ImageResizer {
         echo $data;
     }
 
-    // function from Ryan Rud (http://adryrun.com)
     private static function findSharp($orig, $final) {
         $final  = $final * (750.0 / $orig);
         $a      = 52;
@@ -334,5 +302,16 @@ class ImageResizer {
         $result = $a + $b * $final + $c * $final * $final;
 
         return max(round($result), 0);
+    }
+
+    public function encryptDecrypt($action, $string) {
+        $output = false;
+        $iv = md5(md5($this->salt));
+        if ($action == 'encrypt') {
+            return urlencode(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, md5($this->salt), $string, MCRYPT_MODE_CBC, $iv)));
+        } else if ($action == 'decrypt'){
+            return rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, md5($this->salt), base64_decode(urldecode($string)), MCRYPT_MODE_CBC, $iv), "");
+        }
+        return false;
     }
 }
