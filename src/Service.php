@@ -7,58 +7,21 @@ class Service {
     private static $quality = 90;
     private static $memory = '100M';
     private $enforceReferer = false;
+    private $unlink = false;
 
     public function __construct ($config) {
         $this->salt = $config->auth['salt'];
     }
 
-    public function processRoute () {
-        $pieces = func_get_args();
-
-        if (count($pieces) < 6) {
-            $this->error('Invalid Path');
-        }
-
-        $width = array_shift($pieces);
-        if (!is_numeric($width)) {
-            $this->error('Invalid Width ' . $width);
-        }
-
-        $height = array_shift($pieces);
-        if (!is_numeric($height)) {
-            $this->error('Invalid Height ' . $height);
-        }
-
-        $cropratio = array_shift($pieces);
-        if (substr_count($cropratio, ':') != 1) {
-            $this->error('Invalid Crop Ratio');
-        }
-        $cropPieces = explode(':', $cropratio, 2);
-        if ((!isset($cropPieces[0]) || !is_numeric($cropPieces[0])) || (!isset($cropPieces[1]) || !is_numeric($cropPieces[1])) ) {
-            $this->error('Invalid Crop Ratio');
-        }
-
-        $type = array_shift($pieces);
-        if (!in_array($type, ['L', 'E','ES'])) {
-            $this->error('Invalid Conversion Type ' . $type);
-        }
-
-        $file = implode('/', $pieces);
-        $extension = pathinfo($file, \PATHINFO_EXTENSION);
-        if (!in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'gif'])) {
-            $this->error('Invalid Image Type');
-        }
-
+    public function preProcess ($file, $width, $height, $cropratio, $type, $extension) {
         $filedir = null;
         if (substr_count($file, '/') > 0) {
             $filedir = explode('/', $file);
             $filename = array_pop($filedir);
             $filedir = implode('/', $filedir);
         }
-
         $imagedir = $_SERVER['DOCUMENT_ROOT'] . '/imagecache/' . $width . '/' . $height . '/' . $cropratio . '/' . $type . '/' . $filedir;
         $image = $imagedir . '/' . $filename;
-
         if (!file_exists($imagedir)) {
             @mkdir($imagedir, 0755, true);
             if (!file_exists($imagedir)) {
@@ -66,19 +29,20 @@ class Service {
             }
         }
         $this->process([
-            'file' => $file,
-            'filepath' => $_SERVER['DOCUMENT_ROOT'] . '/' . $file,
-            'image' => $image,
-            'type' => $type,
-            'height' => $height,
-            'width' => $width,
-            'cropratio' => $cropratio,
-            'imagedir' => $imagedir
+            'file'          => $file,
+            'filepath'      => $_SERVER['DOCUMENT_ROOT'] . '/' . $file,
+            'image'         => $image,
+            'type'          => $type,
+            'height'        => $height,
+            'width'         => $width,
+            'cropratio'     => $cropratio,
+            'imagedir'      => $imagedir,
+            'extension'     => $extension
         ]);
     }
 
-    private function error ($msg) {
-        header('Status: 400 ' . $msg);
+    public function error ($msg) {
+        http_response_code(400);
         echo $msg;
         exit;
     }
@@ -123,55 +87,29 @@ class Service {
         return '/imagecache/' . $path . '?' . $this->encryptDecrypt('encrypt', $path);
     }
 
-    private static function getExternalFile (array $options) {
+    private function getExternalFile (array &$options) {
         if ($options['type'] == 'E') {
             $external = 'http://' . $options['file'];
         } else {
             $external = 'https://' . $options['file'];
         }
-        $local = $_SERVER['DOCUMENT_ROOT'] . '/' . $options['file'];
-        $filedir = null;
-        if (substr_count($local, '/') > 0) {
-            $filedir = explode('/', $local);
-            array_pop($filedir);
-            $filedir = implode('/', $filedir);
-        }
-        if (!file_exists($filedir)) {
-            @mkdir($filedir, 0755, true);
-        }
-        file_put_contents($local, file_get_contents($external));
+        $options['filepath'] = $_SERVER['DOCUMENT_ROOT'] . '/imagecache/' . uniqid() . '.' . $options['extension'];
+        file_put_contents($options['filepath'], file_get_contents($external));
+        $this->unlink = true;
     }
 
     private function process (array $options) {
-        //get external file
         if ($options['type'] == 'E' || $options['type'] == 'ES') {
-            self::getExternalFile($options);
+            $this->getExternalFile($options);
         }
-
-        //Images must be local files, so for convenience we strip the domain if it's there
-        $image = preg_replace('/^(s?f|ht)tps?:\/\/[^\/]+/i', '', (string)$options['file']);
-
-        //for security images cannot contain '..' or '<', and
-        if (preg_match('/(\.\.|<|>)/', $image)) {
+        if (preg_match('/(\.\.|<|>)/', (string)$options['file'])) {
             $this->error('Bad Request Error: malformed image path. Image paths must begin with \'/\', ' . $options['file']);
         }
-
-        // If the image doesn't exist, or we haven't been told what it is, there's nothing
-        // that we can do
-        if (!$image) {
-            $this->error('Bad Request Error: no image was specified');
-        }
-
-        // Strip the possible trailing slash off the document root
         if (!file_exists($options['filepath'])) {
             $this->error('Not Found Error: image does not exist: ' . $options['filepath']);
         }
-
-        // Get the size and MIME type of the requested image
         $size = GetImageSize($options['filepath']);
         $mime = $size['mime'];
-
-        // Make sure that the requested file is actually an image
         if (substr($mime, 0, 6) != 'image/') {
             $this->error('Bad Request Error: requested file is not an accepted type: ' . $options['filepath']);
         }
@@ -181,8 +119,6 @@ class Service {
         $maxWidth       = $options['width'];
         $maxHeight      = $options['height'];
         $color          = FALSE;
-
-        // Ratio cropping
         $offsetX    = 0;
         $offsetY    = 0;
 
@@ -204,24 +140,17 @@ class Service {
             }
         }
 
-        // Setting up the ratios needed for resizing. We will compare these below to determine how to
-        // resize the image (based on height or based on width)
         $xRatio     = $maxWidth / $width;
         $yRatio     = $maxHeight / $height;
-
         if ($xRatio * $height < $maxHeight) { // Resize the image based on width
             $tnHeight   = ceil($xRatio * $height);
             $tnWidth    = $maxWidth;
         } else {
-            // Resize the image based on height
             $tnWidth    = ceil($yRatio * $width);
             $tnHeight   = $maxHeight;
         }
-
-        // We don't want to run out of memory
         ini_set('memory_limit', self::$memory);
 
-        // Set up the appropriate image handling functions based on the original image's mime type
         switch ($size['mime']) {
             case 'image/gif':
                 //we will be converting GIFs to PNGs to avoid transparency issues when resizing GIFs
@@ -248,19 +177,12 @@ class Service {
                 break;
         }
 
-        //set up a blank canvas for our resized image (destination)
         $dst = imagecreatetruecolor($tnWidth, $tnHeight);
-
-        //read in the original image
         $src = $creationFunction($options['filepath']);
-
         if (in_array($size['mime'], ['image/gif', 'image/png'])) {
-            //if this is a GIF or a PNG, we need to set up transparency
             imagealphablending($dst, false);
             imagesavealpha($dst, true);
         }
-
-        //resample the original image into the resized canvas we set up earlier
         ImageCopyResampled($dst, $src, 0, 0, $offsetX, $offsetY, $tnWidth, $tnHeight, $width, $height);
         if ($doSharpen) {
             $sharpness  = self::findSharp($width, $tnWidth);
@@ -273,24 +195,18 @@ class Service {
             $offset         = 0;
             imageconvolution($dst, $sharpenMatrix, $divisor, $offset);
         }
-
-        //write the resized image to the cache
-        $outputFunction($dst, $options['image'], self::$quality);
-
-        //put the data of the resized image into a variable
-        ob_start();
-        $outputFunction($dst, null, self::$quality);
-        $data   = ob_get_contents();
-        ob_end_clean();
-
-        //clean up the memory
+        $result = $outputFunction($dst, $options['image'], self::$quality);
+        if ($result !== true) {
+            $this->error('Can not write file');
+        }
         ImageDestroy($src);
         ImageDestroy($dst);
-
-        // Send the image to the browser with some delicious headers
+        if ($this->unlink === true) {
+            unlink($options['filepath']);
+        }
         header('Content-type: ' . $mime);
-        header('Content-Length: ' . strlen($data));
-        echo $data;
+        header('Content-Length: ' . filesize($options['image']));
+        echo file_get_contents($options['image']);
     }
 
     private static function findSharp($orig, $final) {
@@ -309,8 +225,8 @@ class Service {
         $iv = md5(md5($this->salt));
         if ($action == 'encrypt') {
             return urlencode(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, md5($this->salt), $string, MCRYPT_MODE_CBC, $iv)));
-        } else if ($action == 'decrypt'){
-            return rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, md5($this->salt), base64_decode(urldecode($string)), MCRYPT_MODE_CBC, $iv), "");
+        } else if ($action == 'decrypt') {
+            return rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, md5($this->salt), base64_decode(urldecode($string)), MCRYPT_MODE_CBC, $iv));
         }
         return false;
     }

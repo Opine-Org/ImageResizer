@@ -32,14 +32,19 @@ class Route {
     }
 
     public function paths () {
-        $this->route->get('/imagecache/{a}', 'imageResizerController@resizeImage');
-        $this->route->get('/imagecache/{a}/{b}', 'imageResizerController@resizeImage');
-        $this->route->get('/imagecache/{a}/{b}/{c}', 'imageResizerController@resizeImage');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}', 'imageResizerController@resizeImage');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}', 'imageResizerController@resizeImage');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}', 'imageResizerController@resizeImage');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}', 'imageResizerController@resizeImage');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}', 'imageResizerController@resizeImage');
-        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}/{i}', 'imageResizerController@resizeImage');
+        $this->route->get(
+            'imageResizerController@securityFilter', 
+            '/imagecache', [
+                '/{a}' => 'imageResizerController@resizeImage',
+                '/{a}/{b}' => 'imageResizerController@resizeImage',
+                '/{a}/{b}/{c}' => 'imageResizerController@resizeImage',
+                '/{a}/{b}/{c}/{d}' => 'imageResizerController@resizeImage',
+                '/{a}/{b}/{c}/{d}/{e}' => 'imageResizerController@resizeImage',
+                '/{a}/{b}/{c}/{d}/{e}/{f}' => 'imageResizerController@resizeImage',
+                '/{a}/{b}/{c}/{d}/{e}/{f}/{g}' => 'imageResizerController@resizeImage',
+                '/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}' => 'imageResizerController@resizeImage',
+                '/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}/{i}' => 'imageResizerController@resizeImage'
+            ]
+        );
     }
 }

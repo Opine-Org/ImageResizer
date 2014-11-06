@@ -5,6 +5,6 @@ services:
     imageResizer:
         class:     'Opine\ImageResizer\Service'
         arguments: ['@config']
-    imageResizerContoller:
+    imageResizerController:
         class:     'Opine\ImageResizer\Controller'
         arguments: ['@imageResizer']
