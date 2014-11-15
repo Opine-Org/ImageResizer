@@ -8,9 +8,10 @@ class Service {
     private static $memory = '100M';
     private $enforceReferer = false;
     private $unlink = false;
+    private $secret;
 
-    public function __construct ($config) {
-        $this->salt = $config->auth['salt'];
+    public function __construct($secret) {
+        $this->secret = $secret;
     }
 
     public function preProcess ($file, $width, $height, $cropratio, $type, $extension) {
@@ -84,7 +85,7 @@ class Service {
             $cropratio = $width . ':'. $height;
         }
         $path = $width . '/' . $height . '/' . $cropratio . '/' . $type . $url;
-        return '/imagecache/' . $path . '?' . $this->encryptDecrypt('encrypt', $path);
+        return '/imagecache/' . $path . '?' . $this->secret->encrypt($path);
     }
 
     private function getExternalFile (array &$options) {
@@ -218,16 +219,5 @@ class Service {
         $result = $a + $b * $final + $c * $final * $final;
 
         return max(round($result), 0);
-    }
-
-    public function encryptDecrypt($action, $string) {
-        $output = false;
-        $iv = md5(md5($this->salt));
-        if ($action == 'encrypt') {
-            return urlencode(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, md5($this->salt), $string, MCRYPT_MODE_CBC, $iv)));
-        } else if ($action == 'decrypt') {
-            return rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, md5($this->salt), base64_decode(urldecode($string)), MCRYPT_MODE_CBC, $iv));
-        }
-        return false;
     }
 }

@@ -4,7 +4,7 @@ services:
         arguments: ['@route']
     imageResizer:
         class:     'Opine\ImageResizer\Service'
-        arguments: ['@config']
+        arguments: ['@config', '@secret']
     imageResizerController:
         class:     'Opine\ImageResizer\Controller'
-        arguments: ['@imageResizer']
+        arguments: ['@imageResizer', '@secret']
