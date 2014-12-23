@@ -2,8 +2,8 @@
 namespace Opine;
 
 use PHPUnit_Framework_TestCase;
-use Opine\Config\Service;
-use Opine\Container\Service;
+use Opine\Config\Service as Config;
+use Opine\Container\Service as Container;
 
 class ImageResizerTest extends PHPUnit_Framework_TestCase {
 
