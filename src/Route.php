@@ -10,10 +10,10 @@
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -32,19 +32,14 @@ class Route {
     }
 
     public function paths () {
-        $this->route->get(
-            'imageResizerController@securityFilter', 
-            '/imagecache', [
-                '/{a}' => 'imageResizerController@resizeImage',
-                '/{a}/{b}' => 'imageResizerController@resizeImage',
-                '/{a}/{b}/{c}' => 'imageResizerController@resizeImage',
-                '/{a}/{b}/{c}/{d}' => 'imageResizerController@resizeImage',
-                '/{a}/{b}/{c}/{d}/{e}' => 'imageResizerController@resizeImage',
-                '/{a}/{b}/{c}/{d}/{e}/{f}' => 'imageResizerController@resizeImage',
-                '/{a}/{b}/{c}/{d}/{e}/{f}/{g}' => 'imageResizerController@resizeImage',
-                '/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}' => 'imageResizerController@resizeImage',
-                '/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}/{i}' => 'imageResizerController@resizeImage'
-            ]
-        );
+        $this->route->get('/imagecache/{a}',                                    'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
+        $this->route->get('/imagecache/{a}/{b}',                                'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
+        $this->route->get('/imagecache/{a}/{b}/{c}',                            'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}',                        'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}',                    'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}',                'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}',            'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}',        'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
+        $this->route->get('/imagecache/{a}/{b}/{c}/{d}/{e}/{f}/{g}/{h}/{i}',    'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
     }
 }
