@@ -10,7 +10,7 @@ class ImageResizerTest extends PHPUnit_Framework_TestCase {
     public function setup () {
         $root = __DIR__ . '/../public';
         $config = new Config($root);
-        $container = Container::instance($root, $config, $root . '/../config/container.yml');
+        $container = Container::instance($root, $config, $root . '/../config/containers/test-container.yml');
     }
 
     public function testSample () {
