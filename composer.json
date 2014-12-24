@@ -16,7 +16,7 @@
     ],
     "require": {
         "php": ">=5.4.0",
-        "opine/secret": "2.0.0"
+        "opine/secret": "2.0.1"
     },
     "autoload": {
         "psr-4": {
