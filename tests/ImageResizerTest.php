@@ -5,15 +5,17 @@ use PHPUnit_Framework_TestCase;
 use Opine\Config\Service as Config;
 use Opine\Container\Service as Container;
 
-class ImageResizerTest extends PHPUnit_Framework_TestCase {
-
-    public function setup () {
-        $root = __DIR__ . '/../public';
+class ImageResizerTest extends PHPUnit_Framework_TestCase
+{
+    public function setup()
+    {
+        $root = __DIR__.'/../public';
         $config = new Config($root);
-        $container = Container::instance($root, $config, $root . '/../config/containers/test-container.yml');
+        $container = Container::instance($root, $config, $root.'/../config/containers/test-container.yml');
     }
 
-    public function testSample () {
+    public function testSample()
+    {
         $this->assertTrue(true);
     }
 }

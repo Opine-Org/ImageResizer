@@ -24,23 +24,28 @@
  */
 namespace Opine\ImageResizer;
 
-class Controller {
+class Controller
+{
     private $service;
     private $secret;
 
-    public function __construct ($service, $secret) {
+    public function __construct($service, $secret)
+    {
         $this->service = $service;
         $this->secret = $secret;
     }
 
-    public function securityFilter () {
+    public function securityFilter()
+    {
         if (!isset($_SERVER['QUERY_STRING']) || empty($_SERVER['QUERY_STRING'])) {
             http_response_code(404);
+
             return false;
         }
         $pieces = func_get_args();
         if (count($pieces) < 6) {
             http_response_code(404);
+
             return false;
         }
         $input  = implode('/', $pieces);
@@ -48,35 +53,37 @@ class Controller {
         if ($input != $message) {
             return false;
         }
+
         return true;
     }
 
-    public function resizeImage () {
+    public function resizeImage()
+    {
         $pieces = func_get_args();
         $width = array_shift($pieces);
         if (!is_numeric($width)) {
-            $this->service->error('Invalid Width: ' . $width);
+            $this->service->error('Invalid Width: '.$width);
         }
         $height = array_shift($pieces);
         if (!is_numeric($height)) {
-            $this->service->error('Invalid Height ' . $height);
+            $this->service->error('Invalid Height '.$height);
         }
         $cropratio = array_shift($pieces);
         if (substr_count($cropratio, ':') != 1) {
             $this->service->error('Invalid Crop Ratio');
         }
         $cropPieces = explode(':', $cropratio, 2);
-        if ((!isset($cropPieces[0]) || !is_numeric($cropPieces[0])) || (!isset($cropPieces[1]) || !is_numeric($cropPieces[1])) ) {
+        if ((!isset($cropPieces[0]) || !is_numeric($cropPieces[0])) || (!isset($cropPieces[1]) || !is_numeric($cropPieces[1]))) {
             $this->service->error('Invalid Crop Ratio');
         }
         $type = array_shift($pieces);
-        if (!in_array($type, ['L', 'E','ES'])) {
-            $this->service->error('Invalid Conversion Type: ' . $type);
+        if (!in_array($type, ['L', 'E', 'ES'])) {
+            $this->service->error('Invalid Conversion Type: '.$type);
         }
         $file = implode('/', $pieces);
         $extension = pathinfo($file, \PATHINFO_EXTENSION);
         if (!in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'gif'])) {
-            $this->service->error('Invalid Image Type: ' . $extension);
+            $this->service->error('Invalid Image Type: '.$extension);
         }
         $this->service->preProcess($file, $width, $height, $cropratio, $type, $extension);
     }

@@ -24,14 +24,17 @@
  */
 namespace Opine\ImageResizer;
 
-class Route {
+class Route
+{
     private $route;
 
-    public function __construct ($route) {
+    public function __construct($route)
+    {
         $this->route = $route;
     }
 
-    public function paths () {
+    public function paths()
+    {
         $this->route->get('/imagecache/{a}',                                    'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
         $this->route->get('/imagecache/{a}/{b}',                                'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
         $this->route->get('/imagecache/{a}/{b}/{c}',                            'imageResizerController@resizeImage', ['before' => 'imageResizerController@securityFilter']);
