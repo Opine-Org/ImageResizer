@@ -1,5 +1,5 @@
 {
-    "name": "opine\/imageresizer",
+    "name": "opine/imageresizer",
     "type": "library",
     "description": "Service for resizing images based on URL path parameters",
     "keywords": [
@@ -10,7 +10,7 @@
         {
             "name": "Ryan Mahoney",
             "email": "ryan@virtuecenter.com",
-            "homepage": "http:\/\/opine-php.org",
+            "homepage": "http://opine-php.org",
             "role": "Developer"
         }
     ],
@@ -20,7 +20,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Opine\\ImageResizer\\": "src\/"
+            "Opine\\ImageResizer\\": "src/"
         }
     }
 }
